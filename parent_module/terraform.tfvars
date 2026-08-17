@@ -11,6 +11,12 @@ stgs = {
     resource_group_name = "rg-test"
     location            = "Central India"
   }
+
+   stg2 = {
+    name                = "teststg1"
+    resource_group_name = "rg-test"
+    location            = "Central India"
+  }
 }
 
 
