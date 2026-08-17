@@ -10,6 +10,7 @@ on:
     branches:
       - main
 
+# GitHub OIDC permissions
 permissions:
   id-token: write
   contents: read
@@ -21,11 +22,15 @@ jobs:
 
     steps:
 
-      # 1. Checkout Code
+      # 1. Checkout repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Azure Login
+      # 2. Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 3. Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -33,27 +38,28 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 3. Setup Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
       # 4. Terraform Init
       - name: Terraform Init
-        working-directory: ./parent_module
         run: terraform init
+        working-directory: ./parent_module
 
       # 5. Terraform Validate
       - name: Terraform Validate
-        working-directory: ./parent_module
         run: terraform validate
+        working-directory: ./parent_module
 
       # 6. Terraform Plan
+      # Runs on:
+      # - feature branch push
+      # - pull request to main
+      # - main branch push
       - name: Terraform Plan
+        run: terraform plan -input=false
         working-directory: ./parent_module
-        run: terraform plan
 
-      # 7. Terraform Apply - ONLY MAIN
+      # 7. Terraform Apply
+      # Apply ONLY when code is pushed directly to main
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve -input=false
         working-directory: ./parent_module
-        run: terraform apply -auto-approve
